@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>志愿者信息查询（测试用）</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f5f7fa;
+    color: #333;
+    line-height: 1.5;
+    padding: 20px;
+  }
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    overflow: hidden;
+  }
+  header {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    color: white;
+    padding: 24px 30px;
+  }
+  header h1 { font-size: 1.5rem; font-weight: 600; }
+  header p { opacity: 0.9; font-size: 0.9rem; margin-top: 4px; }
+  .search-area {
+    padding: 24px 30px;
+    background: #fafafa;
+    border-bottom: 1px solid #eee;
+  }
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  label {
+    display: block;
+    font-size: 0.85rem;
+    color: #555;
+    margin-bottom: 4px;
+  }
+  input, select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: border-color 0.2s;
+  }
+  input:focus, select:focus {
+    outline: none;
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 3px rgba(79,70,229,0.15);
+  }
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  button {
+    padding: 10px 22px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-search {
+    background: #4f46e5;
+    color: white;
+  }
+  .btn-search:hover { background: #4338ca; }
+  .btn-clear {
+    background: #e5e7eb;
+    color: #374151;
+  }
+  .btn-clear:hover { background: #d1d5db; }
+  .results {
+    padding: 20px 30px 30px;
+  }
+  .result-count {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 16px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+  }
+  th, td {
+    padding: 12px 10px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+  }
+  th {
+    background: #f8fafc;
+    font-weight: 600;
+    color: #475569;
+    position: sticky;
+    top: 0;
+  }
+  tr:hover td { background: #f1f5f9; }
+  .no-result {
+    text-align: center;
+    padding: 40px;
+    color: #94a3b8;
+  }
+  .highlight {
+    background: #fef08a;
+    padding: 1px 3px;
+    border-radius: 3px;
+  }
+  @media (max-width: 600px) {
+    .form-grid { grid-template-columns: 1fr; }
+    th, td { padding: 8px 6px; font-size: 0.85rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>志愿者信息查询</h1>
+    <p>仅用于测试 · 支持姓名 / 性别 / 身份证 / 手机号 部分匹配</p>
+  </header>
+
+  <div class="search-area">
+    <div class="form-grid">
+      <div>
+        <label>姓名（支持部分）</label>
+        <input type="text" id="name" placeholder="例如：李 / 王涵">
+      </div>
+      <div>
+        <label>性别</label>
+        <select id="gender">
+          <option value="">全部</option>
+          <option value="男">男</option>
+          <option value="女">女</option>
+        </select>
+      </div>
+      <div>
+        <label>身份证号（支持部分）</label>
+        <input type="text" id="idcard" placeholder="例如：110102 或 2009">
+      </div>
+      <div>
+        <label>手机号（支持部分）</label>
+        <input type="text" id="phone" placeholder="例如：185 或 1332">
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-search" onclick="doSearch()">🔍 查询</button>
+      <button class="btn-clear" onclick="clearAll()">清空</button>
+    </div>
+  </div>
+
+  <div class="results">
+    <div class="result-count" id="count">共 0 条记录</div>
+    <div id="table-wrap"></div>
+  </div>
+</div>
+
+<script>
+// 数据（已排除红色涂抹行）
+const data = [
+  {name:"王瑛缘", gender:"男", id:"42050220081124651X", phone:"18513321124"},
+  {name:"方瀚铭", gender:"男", id:"110106200902225432", phone:"15510065728"},
+  {name:"李弈臻", gender:"男", id:"370902200907113938", phone:"13671134682"},
+  {name:"李以恒", gender:"男", id:"110102200902070017", phone:"13641157492"},
+  {name:"蒋李",   gender:"男", id:"110105200904162117", phone:"15901031150"},
+  {name:"秦浩然", gender:"男", id:"110108200902066315", phone:"18311283982"},
+  {name:"龚子琦", gender:"男", id:"11010220081219303X", phone:"13661265807"},
+  {name:"李佳楷", gender:"男", id:"110102200901220415", phone:"18510461566"},
+  {name:"杨涛源", gender:"男", id:"110102200907313030", phone:"13581712601"},
+  {name:"竭祉晗", gender:"女", id:"11010420080910254X", phone:"18813009196"},
+  {name:"陈晓澍", gender:"女", id:"110103200906260324", phone:"18612917440"},
+  {name:"赵雨萱", gender:"女", id:"11010520090519214X", phone:"18611935952"},
+  {name:"潘静缘", gender:"女", id:"110102200810011140", phone:"18311184601"},
+  {name:"刘景宣", gender:"男", id:"110104200811182016", phone:"13716762070"},
+  {name:"张斌翔", gender:"男", id:"11010820081018973X", phone:"18611998364"},
+  {name:"路振平", gender:"男", id:"130705200810181217", phone:"15210235363"},
+  {name:"李皓博", gender:"男", id:"110106200901300330", phone:"18311056697"},
+  {name:"李梓函", gender:"男", id:"110102200812100032", phone:"18801046038"},
+  {name:"张纳川", gender:"男", id:"110102200903141112", phone:"13581752825"},
+  {name:"乔潇凡", gender:"男", id:"110104200901170035", phone:"18501331300"},
+  {name:"缴宇霏", gender:"男", id:"110102200808280413", phone:"18519157571"},
+  {name:"柴淞译", gender:"男", id:"110107200907082713", phone:"15311661601"},
+  {name:"闫夏瑜", gender:"女", id:"110106200907317221", phone:"18610867132"},
+  {name:"刘佳依", gender:"女", id:"110106200905155425", phone:"13810010515"},
+  {name:"姚睿婷", gender:"女", id:"110108200902112289", phone:"18511286722"},
+  {name:"王涵璐", gender:"女", id:"110102200810083320", phone:"15210878551"},
+  {name:"罗燕",   gender:"女", id:"110102200803120023", phone:"18911012389"},
+  {name:"廖桐雨", gender:"女", id:"110104200908101227", phone:"13717608435"},
+  {name:"李木子", gender:"女", id:"110108200812166347", phone:"13241491216"},
+  {name:"陈籽丹", gender:"女", id:"110102200810280420", phone:"13021048877"},
+  {name:"杨紫云", gender:"女", id:"110107200907152443", phone:"17710363754"},
+  {name:"王佳靓", gender:"女", id:"110105200809160420", phone:"15712909165"},
+  {name:"胡颖函", gender:"女", id:"110106200809217227", phone:"15010710967"},
+  {name:"巴宇晨", gender:"女", id:"110106200905177528", phone:"15526551926"},
+  {name:"刘思彦", gender:"男", id:"110104200903301254", phone:"18311480954"},
+  {name:"黄健容", gender:"男", id:"110105200903125357", phone:"13621108982"},
+  {name:"张锦山", gender:"男", id:"110102200812182330", phone:"18301339580"},
+  {name:"王长皓", gender:"男", id:"110108200811223637", phone:"13716339812"},
+  {name:"王梓燠", gender:"男", id:"110104200901241219", phone:"13621029455"},
+  {name:"江旭昊", gender:"男", id:"110107200801271516", phone:"15210319670"}
+];
+
+function highlight(text, keyword) {
+  if (!keyword) return text;
+  const re = new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+  return text.replace(re, '<span class="highlight">$1</span>');
+}
+
+function doSearch() {
+  const nameQ   = document.getElementById('name').value.trim().toLowerCase();
+  const genderQ = document.getElementById('gender').value;
+  const idQ     = document.getElementById('idcard').value.trim().toLowerCase();
+  const phoneQ  = document.getElementById('phone').value.trim().toLowerCase();
+
+  const results = data.filter(p => {
+    if (nameQ   && !p.name.toLowerCase().includes(nameQ))   return false;
+    if (genderQ && p.gender !== genderQ)                     return false;
+    if (idQ     && !p.id.toLowerCase().includes(idQ))       return false;
+    if (phoneQ  && !p.phone.toLowerCase().includes(phoneQ)) return false;
+    return true;
+  });
+
+  document.getElementById('count').textContent = `共 ${results.length} 条记录`;
+
+  const wrap = document.getElementById('table-wrap');
+  if (results.length === 0) {
+    wrap.innerHTML = '<div class="no-result">没有找到匹配的记录</div>';
+    return;
+  }
+
+  let html = `<table>
+    <thead>
+      <tr>
+        <th>姓名</th>
+        <th>性别</th>
+        <th>身份证号</th>
+        <th>手机号</th>
+      </tr>
+    </thead>
+    <tbody>`;
+
+  results.forEach(p => {
+    html += `<tr>
+      <td>${highlight(p.name, nameQ)}</td>
+      <td>${p.gender}</td>
+      <td>${highlight(p.id, idQ)}</td>
+      <td>${highlight(p.phone, phoneQ)}</td>
+    </tr>`;
+  });
+
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
+
+function clearAll() {
+  document.getElementById('name').value = '';
+  document.getElementById('gender').value = '';
+  document.getElementById('idcard').value = '';
+  document.getElementById('phone').value = '';
+  document.getElementById('count').textContent = '共 0 条记录';
+  document.getElementById('table-wrap').innerHTML = '';
+}
+
+// 回车也能搜索
+document.querySelectorAll('input').forEach(inp => {
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter') doSearch();
+  });
+});
+
+// 页面加载后默认显示全部
+doSearch();
+</script>
+</body>
+</html>
